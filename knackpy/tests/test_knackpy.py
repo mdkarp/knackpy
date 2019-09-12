@@ -10,7 +10,6 @@ Tests:
 - [x] both view + scene + object
 - [x] page limit
 - [x] rows per page
-- not view + scene or object
 - public view/scene
 - all params
 - all methods
@@ -21,9 +20,10 @@ Tests:
 - insert
 - update
 - delete (need this method)
-
+- csv
 """
 
+import pdb
 
 class TestKnackpy:
     def test_scene_view_with_api_key(self):
@@ -45,6 +45,7 @@ class TestKnackpy:
 
         assert len(kn.data) == 1
 
+
     def test_object_api_key(self):
         # create a Knack instance from an object key
         from knackpy import Knack
@@ -62,7 +63,7 @@ class TestKnackpy:
         assert len(kn.data) > 0
 
     def test_object_view_scene_error(self):
-        # fails because an instance must have either an object or a scene/view, but not both
+        # an instance must have either an object or a scene/view, but not both
         from knackpy import Knack
 
         module = APP["all_fields"]
@@ -79,5 +80,5 @@ class TestKnackpy:
                 rows_per_page=1,
             )
 
-            # check for text of expected our generic error message
+            # check for text of expected generic error message
         assert "not both" in str(excinfo.value).lower()
