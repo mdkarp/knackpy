@@ -3,7 +3,9 @@ import csv
 from datetime import datetime
 import json
 import logging
+import os
 import pdb
+from urllib.parse import urlparse
 
 import pytz
 import requests
@@ -428,6 +430,10 @@ class Knack(object):
                             #  connection is empty
                             new_record[field_label] = ""
 
+                    elif field_type == "file":
+                        fieldnames.append(field_label)
+                        new_record[field_label] = record[field].get("url")
+
                     else:
                         fieldnames.append(field_label)
 
@@ -521,6 +527,119 @@ class Knack(object):
                         record[field] = dt_utc.replace(tzinfo=pytz.utc).isoformat()
 
         return converted_records
+
+    def _assemble_downloads(self, path, download_fields, label_fields):
+        """
+        Assemble paths and filenames of files to be downloaded.
+        Returns list of dicts where each entry is {"url" : "abc", "filename" : "xyz"}
+        """
+        downloads = []
+
+        for record in self.data:
+            for field in download_fields:
+                download = {}
+
+            for field in record.keys():
+                if field in download_fields:
+                    download["url"] = record[field]
+                    download["filename"] = os.path.basename(download["url"])
+
+                    if label_fields:
+
+                        # ensure that field labels are prepended in sequence provided
+                        label_fields.reverse()
+
+                        for field in label_fields:
+                            download[
+                                "filename"
+                            ] = f"{record[field]}_{download['filename']}"
+
+                        download["filename"] = os.path.join(path, download["filename"])
+
+                    downloads.append(download)
+
+        return downloads
+
+    def _download_files(self):
+        # TODO: handle download errors
+        for file in self.downloads:
+            print(f"Downloading {file['url']}")
+
+            if not self.overwrite_files:
+                if os.path.exists(file["filename"]):
+                    print(f"{file['filename']} already exist. No data written.")
+                continue
+
+            r = requests.get(file["url"], allow_redirects=True)
+
+            with open(file["filename"], "wb") as fout:
+                fout.write(r.content)
+
+        return len(self.downloads)
+
+    def download(
+        self,
+        destination="_downloads",
+        download_fields=None,
+        label_fields=None,
+        overwrite=True,
+    ):
+        """
+        Download files from Knack records. Requires that the Knack instance has been
+        supplied scene and view keys.
+
+        Parameters
+        ----------
+        destination : string (optional | default: _downloads)
+            relative path to the directory to which files will be written
+        download_fields : list (optional | default : knackpy_downloads)
+            The specific field names (by label, not knack ID) in which contain
+            file references. If none are provided, all fields of type=="file" will
+            be retrieved.
+        label_fields : list (optional | default: None)
+            Any field names (by label, not knack ID) specificed here will be prepended
+            to the attachment filename, separated by an underscore (_).
+        overwrite : bool (optional | default: True)
+            Indicates if existing files will be overwritten.
+        Returns
+        _______
+        Integer count of files downloaded.
+
+        # TODO: how to handle many fieldnames in field?
+        """
+        if not self.scene and self.view:
+            raise Exception(
+                "Scene and view keys are required to download files. This Knack instance must have been created with an object ID rather than scene + view ids."
+            )
+
+        if not isinstance(download_fields, list) and download_fields:
+            raise Exception("download_fields paramenter must be a list.")
+
+        if not isinstance(label_fields, list) and label_fields:
+            raise Exception("label_fields paramenter must be a list.")
+
+        # create output directory if it doesn't exist
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+
+        if not download_fields:
+            # identify fields of type "file" if none are provided
+            download_fields = [
+                self.fields[field]["label"]
+                for field in self.fields.keys()
+                if self.fields[field]["type"] == "file"
+            ]
+
+        self.overwrite_files = overwrite
+
+        self.downloads = self._assemble_downloads(
+            destination, download_fields, label_fields
+        )
+
+        download_count = self._download_files()
+        print(f"{download_count} files downloaded.")
+
+        return download_count
 
     def to_csv(self, filename, delimiter=","):
         """
