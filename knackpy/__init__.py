@@ -250,7 +250,7 @@ class Knack(object):
         for obj in objects:  
             print('Get field data for {}'.format(obj))
 
-            fields_endpoint = 'https://api.knack.com/v1/objects/{}/fields?rows_per_page={}'.format(obj, self.rows_per_page)
+            fields_endpoint = 'https://usgc-api.knack.com/v1/objects/{}/fields?rows_per_page={}'.format(obj, self.rows_per_page)
 
             field_data = self.get_data(fields_endpoint, 'fields')
 
@@ -467,12 +467,12 @@ class Knack(object):
         return self.endpoint (string)
         '''
         if self.scene and self.view:
-            self.endpoint = 'https://api.knack.com/v1/pages/{}/views/{}/records?rows_per_page={}'.format( self.scene, self.view, self.rows_per_page)
+            self.endpoint = 'https://usgc-api.knack.com/v1/pages/{}/views/{}/records?rows_per_page={}'.format( self.scene, self.view, self.rows_per_page)
 
             return self.endpoint
         
         if self.obj:
-            self.endpoint = 'https://api.knack.com/v1/objects/{}/records?rows_per_page={}'.format( self.obj, self.rows_per_page ) 
+            self.endpoint = 'https://usgc-api.knack.com/v1/objects/{}/records?rows_per_page={}'.format( self.obj, self.rows_per_page )
             return self.endpoint
 
 
