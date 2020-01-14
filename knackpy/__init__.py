@@ -547,8 +547,8 @@ def record(
     '''
     Knack API request wrapper creating, updating, and deleting Knack records.
     '''
-    endpoint = 'https://api.knack.com/v1/objects/{}/records'.format(obj_key)
-    
+    endpoint = 'https://usgc-api.knack.com/v1/objects/{}/records'.format(obj_key)
+
     if method != 'create':
         _id = data[id_key]
         endpoint = '{}/{}'.format(endpoint, _id)
